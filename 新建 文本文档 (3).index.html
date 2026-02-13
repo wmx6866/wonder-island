@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>奇妙探险岛</title>
+    <style>
+        body {
+            background-color: #E0F7FA; /* 浅蓝色背景 */
+            font-family: 'Comic Sans MS', 'YouYuan', sans-serif; /* 幼圆字体 */
+            text-align: center;
+        }
+        h1 { color: #006064; }
+        
+        .card-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 50px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            width: 200px;
+            box-shadow: 0 8px 0 #B2EBF2; /* 立体效果 */
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 4px solid #4DD0E1;
+        }
+
+        .card:active {
+            transform: translateY(4px); /* 点击下沉效果 */
+            box-shadow: 0 4px 0 #B2EBF2;
+        }
+
+        .card img {
+            width: 100px;
+        }
+
+        .score-board {
+            font-size: 24px;
+            color: #FF6F00;
+            background: #FFF8E1;
+            display: inline-block;
+            padding: 10px 30px;
+            border-radius: 50px;
+            border: 3px solid #FFCA28;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🏝️ 奇妙探险岛 🏝️</h1>
+    
+    <div class="score-board">
+        🌟 星星币: <span id="score">0</span>
+    </div>
+
+    <div class="card-container">
+        <!-- 苹果卡片 -->
+        <div class="card" onclick="playAudio('apple', '苹果')">
+            <div style="font-size: 80px;">🍎</div>
+            <h2>Apple</h2>
+        </div>
+
+        <!-- 猫咪卡片 -->
+        <div class="card" onclick="playAudio('cat', '猫')">
+            <div style="font-size: 80px;">🐱</div>
+            <h2>Cat</h2>
+        </div>
+    </div>
+
+    <script>
+        let score = 0;
+
+        function playAudio(text, chinese) {
+            // 1. 播放声音 (使用浏览器自带语音)
+            let utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US'; // 美式英语
+            utterance.rate = 0.8; // 语速稍微慢一点
+            window.speechSynthesis.speak(utterance);
+
+            // 2. 增加奖励
+            score += 5;
+            document.getElementById('score').innerText = score;
+            
+            // 3. 简单的反馈动画
+            alert("太棒了！这是 " + chinese + "！奖励 5 个星星币！✨");
+        }
+    </script>
+
+</body>
+</html>
