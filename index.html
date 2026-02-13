@@ -2,95 +2,228 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>奇妙探险岛</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>奇妙探险岛 - 进阶版</title>
     <style>
         body {
-            background-color: #E0F7FA; /* 浅蓝色背景 */
-            font-family: 'Comic Sans MS', 'YouYuan', sans-serif; /* 幼圆字体 */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #2c3e50;
+            color: #ecf0f1;
             text-align: center;
-        }
-        h1 { color: #006064; }
-        
-        .card-container {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 50px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 20px;
             padding: 20px;
-            width: 200px;
-            box-shadow: 0 8px 0 #B2EBF2; /* 立体效果 */
-            cursor: pointer;
-            transition: transform 0.2s;
-            border: 4px solid #4DD0E1;
+            max-width: 800px;
+            margin: 0 auto;
         }
-
-        .card:active {
-            transform: translateY(4px); /* 点击下沉效果 */
-            box-shadow: 0 4px 0 #B2EBF2;
+        h1 { color: #f1c40f; text-shadow: 2px 2px 4px #000; }
+        .status-bar {
+            display: flex;
+            justify-content: space-around;
+            background: #34495e;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #7f8c8d;
         }
-
-        .card img {
-            width: 100px;
+        .stat-box { font-size: 1.1em; }
+        .stat-value { font-weight: bold; color: #e67e22; }
+        #game-log {
+            background-color: #34495e;
+            height: 300px;
+            overflow-y: auto;
+            border: 2px solid #7f8c8d;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: left;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            line-height: 1.6;
         }
-
-        .score-board {
-            font-size: 24px;
-            color: #FF6F00;
-            background: #FFF8E1;
+        .log-entry { margin-bottom: 10px; border-bottom: 1px dashed #555; padding-bottom: 5px; }
+        .event-good { color: #2ecc71; }
+        .event-bad { color: #e74c3c; }
+        .event-mysterious { color: #9b59b6; }
+        
+        .controls button {
+            background-color: #e67e22;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            text-align: center;
+            text-decoration: none;
             display: inline-block;
-            padding: 10px 30px;
-            border-radius: 50px;
-            border: 3px solid #FFCA28;
-            margin-top: 20px;
+            font-size: 16px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .controls button:hover { background-color: #d35400; }
+        .controls button:disabled { background-color: #95a5a6; cursor: not-allowed; }
+        
+        /* 道具栏样式 */
+        #inventory {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #bdc3c7;
         }
     </style>
 </head>
 <body>
 
-    <h1>🏝️ 奇妙探险岛 🏝️</h1>
-    
-    <div class="score-board">
-        🌟 星星币: <span id="score">0</span>
+    <h1>🏝️ 奇妙探险岛：深渊呼唤</h1>
+    <p>你的探险队登陆了一座未知的岛屿...</p>
+
+    <div class="status-bar">
+        <div class="stat-box">❤️ 体力: <span id="health" class="stat-value">100</span></div>
+        <div class="stat-box">🧠 理智: <span id="sanity" class="stat-value">100</span></div>
+        <div class="stat-box">💰 财富: <span id="score" class="stat-value">0</span></div>
+        <div class="stat-box">📅 天数: <span id="day" class="stat-value">1</span></div>
     </div>
 
-    <div class="card-container">
-        <!-- 苹果卡片 -->
-        <div class="card" onclick="playAudio('apple', '苹果')">
-            <div style="font-size: 80px;">🍎</div>
-            <h2>Apple</h2>
-        </div>
+    <div id="game-log">
+        <div class="log-entry">探险日志 Day 1：我们踏上了海滩，空气中弥漫着古老而危险的气息。</div>
+    </div>
 
-        <!-- 猫咪卡片 -->
-        <div class="card" onclick="playAudio('cat', '猫')">
-            <div style="font-size: 80px;">🐱</div>
-            <h2>Cat</h2>
-        </div>
+    <div id="inventory">🎒 背包: <span id="items">空空如也</span></div>
+
+    <div class="controls">
+        <button onclick="explore('forest')">🌲 探索密林 (消耗体力)</button>
+        <button onclick="explore('ruins')">🏛️ 深入遗迹 (消耗理智)</button>
+        <button onclick="rest()">⛺ 扎营休息 (恢复状态)</button>
+        <button onclick="useItem()" id="btn-use-item" disabled>💊 使用急救包</button>
     </div>
 
     <script>
+        let health = 100;
+        let sanity = 100;
         let score = 0;
+        let day = 1;
+        let hasMedkit = false;
+        let isGameOver = false;
 
-        function playAudio(text, chinese) {
-            // 1. 播放声音 (使用浏览器自带语音)
-            let utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US'; // 美式英语
-            utterance.rate = 0.8; // 语速稍微慢一点
-            window.speechSynthesis.speak(utterance);
+        const logElement = document.getElementById('game-log');
 
-            // 2. 增加奖励
-            score += 5;
+        // 随机事件库
+        const forestEvents = [
+            { text: "你发现了一株稀有的发光兰花，小心翼翼地采摘下来。", change: { health: -5, sanity: 5, score: 50 }, type: "good" },
+            { text: "突然窜出一只野猪！你受了伤，但勉强击退了它。", change: { health: -20, sanity: -5, score: 0 }, type: "bad" },
+            { text: "你在树洞里发现了一个被遗弃的背包，里面有一个急救包！", change: { health: -5, sanity: 0, score: 10, item: "medkit" }, type: "good" },
+            { text: "森林里起了大雾，你在原地转了三个小时，精疲力竭。", change: { health: -15, sanity: -10, score: 0 }, type: "bad" }
+        ];
+
+        const ruinsEvents = [
+            { text: "你在石碑上解读出了古代文字，获得了珍贵的知识。", change: { health: -5, sanity: -15, score: 100 }, type: "mysterious" },
+            { text: "你误触了机关，一支毒箭擦伤了你的手臂。", change: { health: -25, sanity: -5, score: 0 }, type: "bad" },
+            { text: "你发现了一尊纯金的小雕像，它看起来价值连城！", change: { health: -5, sanity: -10, score: 200 }, type: "good" },
+            { text: "黑暗中似乎有眼睛在盯着你...你感到极度恐慌。", change: { health: 0, sanity: -25, score: 0 }, type: "bad" }
+        ];
+
+        function updateStatus() {
+            document.getElementById('health').innerText = health;
+            document.getElementById('sanity').innerText = sanity;
             document.getElementById('score').innerText = score;
+            document.getElementById('day').innerText = day;
             
-            // 3. 简单的反馈动画
-            alert("太棒了！这是 " + chinese + "！奖励 5 个星星币！✨");
+            // 更新背包显示
+            document.getElementById('items').innerText = hasMedkit ? "急救包 x1" : "空空如也";
+            document.getElementById('btn-use-item').disabled = !hasMedkit || isGameOver;
+
+            // 检查游戏结束
+            if (health <= 0) {
+                log("💔 体力耗尽，你倒在了探险的途中...", "event-bad");
+                endGame("死亡");
+            } else if (sanity <= 0) {
+                log("🧠 你被岛上的幻象逼疯了，消失在迷雾中...", "event-bad");
+                endGame("发疯");
+            }
+        }
+
+        function log(message, type = "") {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            entry.innerText = `Day ${day}: ${message}`;
+            logElement.prepend(entry); // 新消息在最上面
+        }
+
+        function getRandomEvent(eventList) {
+            const randomIndex = Math.floor(Math.random() * eventList.length);
+            return eventList[randomIndex];
+        }
+
+        function explore(location) {
+            if (isGameOver) return;
+
+            day++;
+            let event;
+
+            if (location === 'forest') {
+                event = getRandomEvent(forestEvents);
+            } else if (location === 'ruins') {
+                event = getRandomEvent(ruinsEvents);
+            }
+
+            // 应用事件结果
+            health += event.change.health;
+            sanity += event.change.sanity;
+            score += event.change.score;
+            
+            // 道具逻辑
+            if (event.change.item === "medkit") {
+                hasMedkit = true;
+                log(event.text + " (获得道具：急救包)", event.type);
+            } else {
+                log(event.text, event.type);
+            }
+
+            // 限制数值范围
+            if (health > 100) health = 100;
+            if (sanity > 100) sanity = 100;
+
+            updateStatus();
+        }
+
+        function rest() {
+            if (isGameOver) return;
+            day++;
+            const healAmount = 15;
+            const sanityAmount = 10;
+            health = Math.min(100, health + healAmount);
+            sanity = Math.min(100, sanity + sanityAmount);
+            
+            // 休息也有风险
+            if (Math.random() > 0.8) {
+                log("昨晚做了个噩梦，休息效果一般，而且食物被偷了一些。", "event-bad");
+                score = Math.max(0, score - 20);
+            } else {
+                log("你生起篝火睡了个好觉，感觉精力充沛。", "event-good");
+            }
+            updateStatus();
+        }
+
+        function useItem() {
+            if (isGameOver || !hasMedkit) return;
+            health = Math.min(100, health + 40);
+            hasMedkit = false;
+            log("使用了急救包，伤口处理得很完美！(体力大量恢复)", "event-good");
+            updateStatus();
+        }
+
+        function endGame(reason) {
+            isGameOver = true;
+            let title = reason === "死亡" ? "💀 探险失败" : "🌀 意志崩溃";
+            let rank = "";
+            
+            if (score < 100) rank = "初级探险家";
+            else if (score < 500) rank = "资深猎人";
+            else rank = "传奇冒险王";
+
+            log(`=== 游戏结束 ===`, "event-mysterious");
+            log(`最终评价：${rank} (总分: ${score})`, "event-mysterious");
+            
+            // 禁用所有按钮
+            const buttons = document.querySelectorAll('.controls button');
+            buttons.forEach(btn => btn.disabled = true);
         }
     </script>
-
 </body>
-
 </html>
